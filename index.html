@@ -117,6 +117,14 @@
       animation: fadeDown 0.5s ease forwards 0.3s;
     }
 
+    .proxy-note {
+      margin-top: 0.65rem;
+      color: var(--muted);
+      font-size: 0.72rem;
+      line-height: 1.35;
+      letter-spacing: 0.02em;
+    }
+
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -566,6 +574,7 @@
         <input type="password" class="key-input" id="apiKey" placeholder="sk-or-v1-..." autocomplete="off" spellcheck="false"/>
         <button class="toggle-btn" id="toggleKey" onclick="toggleKeyVisibility()">show</button>
       </div>
+      <div class="proxy-note">Requests are sent to the local <code>/proxy</code> endpoint, then forwarded server-side to OpenRouter.</div>
 
       <div class="separator"></div>
 
@@ -690,6 +699,7 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             apiKey: key,
+            origin: window.location.origin,
             model,
             messages: [{ role: 'user', content: prompt }],
             max_tokens: 256,
