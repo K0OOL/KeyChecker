@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>OpenRouter Key Tester</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --border: #1e1e2e;
+      --border-hover: #3a3a5c;
+      --text: #e8e8f0;
+      --muted: #6b6b8a;
+      --accent: #7c6af7;
+      --accent-glow: rgba(124, 106, 247, 0.25);
+      --green: #3ef5a3;
+      --green-glow: rgba(62, 245, 163, 0.2);
+      --red: #f5526a;
+      --red-glow: rgba(245, 82, 106, 0.2);
+      --yellow: #f5c842;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Syne', sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -30%;
+      left: -20%;
+      width: 60%;
+      height: 60%;
+      background: radial-gradient(ellipse, rgba(124, 106, 247, 0.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -20%;
+      right: -10%;
+      width: 40%;
+      height: 50%;
+      background: radial-gradient(ellipse, rgba(62, 245, 163, 0.05) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 680px;
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      margin-bottom: 2.5rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      padding: 0.25rem 0.75rem;
+      border-radius: 2px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+      opacity: 0;
+      animation: fadeDown 0.4s ease forwards 0.1s;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s infinite;
+    }
+
+    h1 {
+      font-family: var(--sans);
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      opacity: 0;
+      animation: fadeDown 0.5s ease forwards 0.2s;
+    }
+
+    h1 span { color: var(--accent); }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-top: 0.75rem;
+      letter-spacing: 0.02em;
+      opacity: 0;
+      animation: fadeDown 0.5s ease forwards 0.3s;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2rem;
+      margin-bottom: 1.25rem;
+      opacity: 0;
+      animation: fadeUp 0.5s ease forwards;
+      transition: border-color 0.2s;
+    }
+
+    .card:hover { border-color: var(--border-hover); }
+    .card:nth-child(1) { animation-delay: 0.35s; }
+    .card:nth-child(2) { animation-delay: 0.45s; }
+
+    .field-label {
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .field-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .key-input-wrap {
+      display: flex;
+      gap: 0.75rem;
+      align-items: stretch;
+    }
+
+    .key-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      padding: 0.75rem 1rem;
+      border-radius: 3px;
+      outline: none;
+      letter-spacing: 0.05em;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .key-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .key-input::placeholder { color: var(--muted); }
+
+    .toggle-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      padding: 0 0.75rem;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      letter-spacing: 0.08em;
+    }
+
+    .toggle-btn:hover { border-color: var(--border-hover); color: var(--text); }
+
+    .model-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      margin-top: 0.25rem;
+    }
+
+    .model-chip {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.72rem;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      letter-spacing: 0.02em;
+      user-select: none;
+    }
+
+    .model-chip:hover { border-color: var(--border-hover); color: var(--text); }
+
+    .model-chip.selected {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    .model-chip .dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      border: 1px solid currentColor;
+      transition: background 0.15s;
+      flex-shrink: 0;
+    }
+
+    .model-chip.selected .dot { background: var(--accent); }
+
+    .custom-model-wrap {
+      margin-top: 0.5rem;
+    }
+
+    .custom-model-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      padding: 0.6rem 0.85rem;
+      border-radius: 3px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      letter-spacing: 0.02em;
+    }
+
+    .custom-model-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .custom-model-input::placeholder { color: var(--muted); }
+
+    .prompt-textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      padding: 0.75rem 1rem;
+      border-radius: 3px;
+      outline: none;
+      resize: vertical;
+      min-height: 80px;
+      line-height: 1.6;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .prompt-textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .run-btn {
+      width: 100%;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      font-family: var(--sans);
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      padding: 0.9rem 2rem;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+      animation: fadeUp 0.4s ease forwards 0.55s;
+    }
+
+    .run-btn:hover:not(:disabled) {
+      background: #9483f9;
+      box-shadow: 0 0 24px var(--accent-glow);
+      transform: translateY(-1px);
+    }
+
+    .run-btn:active:not(:disabled) { transform: translateY(0); }
+
+    .run-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .run-btn .spinner {
+      display: none;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-right: 0.5rem;
+    }
+
+    .run-btn.loading .spinner { display: inline-block; }
+    .run-btn.loading .btn-text::after { content: '...'; }
+
+    .result-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      display: none;
+      opacity: 0;
+      animation: fadeUp 0.35s ease forwards;
+    }
+
+    .result-card.visible { display: block; }
+
+    .result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.85rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .status-icon {
+      font-size: 1rem;
+    }
+
+    .status-badge.ok { color: var(--green); }
+    .status-badge.error { color: var(--red); }
+    .status-badge.warn { color: var(--yellow); }
+
+    .result-meta {
+      display: flex;
+      gap: 1.5rem;
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    .result-meta span b {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .result-body {
+      padding: 1.25rem;
+    }
+
+    .result-section {
+      margin-bottom: 1.25rem;
+    }
+
+    .result-section:last-child { margin-bottom: 0; }
+
+    .result-section-title {
+      font-size: 0.65rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .result-content {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 0.85rem 1rem;
+      font-size: 0.8rem;
+      line-height: 1.7;
+      word-break: break-word;
+      white-space: pre-wrap;
+      color: var(--text);
+    }
+
+    .result-content.ok-bg { border-color: rgba(62,245,163,0.2); background: rgba(62,245,163,0.04); }
+    .result-content.err-bg { border-color: rgba(245,82,106,0.2); background: rgba(245,82,106,0.04); color: var(--red); }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+    }
+
+    .stat-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 0.75rem 1rem;
+      text-align: center;
+    }
+
+    .stat-val {
+      font-family: var(--sans);
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--accent);
+      display: block;
+    }
+
+    .stat-key {
+      font-size: 0.62rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 0.2rem;
+    }
+
+    .history-wrap {
+      margin-top: 1.25rem;
+      opacity: 0;
+      animation: fadeUp 0.4s ease forwards 0.6s;
+    }
+
+    .history-title {
+      font-size: 0.65rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .history-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+
+    .history-list::-webkit-scrollbar { width: 4px; }
+    .history-list::-webkit-scrollbar-track { background: transparent; }
+    .history-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 0.85rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      transition: border-color 0.15s;
+    }
+
+    .history-item:hover { border-color: var(--border-hover); }
+
+    .history-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .history-dot.ok { background: var(--green); box-shadow: 0 0 6px var(--green-glow); }
+    .history-dot.err { background: var(--red); box-shadow: 0 0 6px var(--red-glow); }
+
+    .history-item .model-tag {
+      color: var(--accent);
+      font-size: 0.68rem;
+    }
+
+    .history-item .time-tag { margin-left: auto; font-size: 0.65rem; }
+
+    .clear-btn {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      cursor: pointer;
+      padding: 0.2rem 0.4rem;
+      border-radius: 2px;
+      transition: color 0.2s;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-left: auto;
+    }
+
+    .clear-btn:hover { color: var(--red); }
+
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    @keyframes shimmer {
+      0% { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+
+    .separator {
+      height: 1px;
+      background: var(--border);
+      margin: 1.25rem 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="badge"><span class="badge-dot"></span> local tool</div>
+      <h1>OpenRouter<br/><span>Key Validator</span></h1>
+      <p class="subtitle">test your api key · check models · measure latency</p>
+    </header>
+
+    <!-- Card 1: Key + Config -->
+    <div class="card">
+      <div class="field-label">API Key</div>
+      <div class="key-input-wrap">
+        <input type="password" class="key-input" id="apiKey" placeholder="sk-or-v1-..." autocomplete="off" spellcheck="false"/>
+        <button class="toggle-btn" id="toggleKey" onclick="toggleKeyVisibility()">show</button>
+      </div>
+
+      <div class="separator"></div>
+
+      <div class="field-label">Model</div>
+      <div class="model-grid" id="modelGrid">
+        <!-- chips injected by JS -->
+      </div>
+      <div class="custom-model-wrap">
+        <input type="text" class="custom-model-input" id="customModel" placeholder="or type a custom model id, e.g. meta-llama/llama-3.3-70b-instruct"/>
+      </div>
+
+      <div class="separator"></div>
+
+      <div class="field-label">Test Prompt</div>
+      <textarea class="prompt-textarea" id="testPrompt">Say "API key is valid" in exactly 5 words.</textarea>
+    </div>
+
+    <!-- Run button -->
+    <button class="run-btn" id="runBtn" onclick="runTest()">
+      <span class="spinner" id="spinner"></span>
+      <span class="btn-text" id="btnText">Run Validation</span>
+    </button>
+
+    <!-- Result -->
+    <div class="result-card" id="resultCard">
+      <div class="result-header">
+        <div class="status-badge" id="statusBadge"></div>
+        <div class="result-meta" id="resultMeta"></div>
+      </div>
+      <div class="result-body">
+        <div class="result-section">
+          <div class="result-section-title">Response</div>
+          <div class="result-content" id="resultContent"></div>
+        </div>
+        <div class="result-section" id="statsSection">
+          <div class="result-section-title">Token Usage</div>
+          <div class="stats-row" id="statsRow"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="history-wrap" id="historyWrap" style="display:none">
+      <div class="history-title">
+        Recent Tests
+        <button class="clear-btn" onclick="clearHistory()">clear</button>
+      </div>
+      <div class="history-list" id="historyList"></div>
+    </div>
+  </div>
+
+  <script>
+    const MODELS = [
+      { id: 'openai/gpt-4o-mini',         label: 'GPT-4o mini' },
+      { id: 'openai/gpt-4o',              label: 'GPT-4o' },
+      { id: 'anthropic/claude-3.5-haiku', label: 'Claude 3.5 Haiku' },
+      { id: 'anthropic/claude-sonnet-4',  label: 'Claude Sonnet 4' },
+      { id: 'google/gemini-2.0-flash-001',label: 'Gemini 2.0 Flash' },
+      { id: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B' },
+    ];
+
+    let selectedModel = MODELS[0].id;
+    let history = JSON.parse(localStorage.getItem('or_history') || '[]');
+
+    function buildModelGrid() {
+      const grid = document.getElementById('modelGrid');
+      grid.innerHTML = '';
+      MODELS.forEach(m => {
+        const chip = document.createElement('div');
+        chip.className = 'model-chip' + (m.id === selectedModel ? ' selected' : '');
+        chip.innerHTML = `<span class="dot"></span>${m.label}`;
+        chip.onclick = () => selectModel(m.id);
+        grid.appendChild(chip);
+      });
+    }
+
+    function selectModel(id) {
+      selectedModel = id;
+      document.getElementById('customModel').value = '';
+      buildModelGrid();
+    }
+
+    document.getElementById('customModel').addEventListener('input', function() {
+      if (this.value.trim()) {
+        selectedModel = null;
+        buildModelGrid();
+      } else {
+        selectedModel = MODELS[0].id;
+        buildModelGrid();
+      }
+    });
+
+    function toggleKeyVisibility() {
+      const input = document.getElementById('apiKey');
+      const btn = document.getElementById('toggleKey');
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = 'hide';
+      } else {
+        input.type = 'password';
+        btn.textContent = 'show';
+      }
+    }
+
+    async function runTest() {
+      const key = document.getElementById('apiKey').value.trim();
+      const custom = document.getElementById('customModel').value.trim();
+      const model = custom || selectedModel || MODELS[0].id;
+      const prompt = document.getElementById('testPrompt').value.trim() || 'Say hello.';
+
+      if (!key) {
+        showError('Please enter an API key.');
+        return;
+      }
+
+      setLoading(true);
+      const t0 = performance.now();
+
+      try {
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${key}`,
+            'HTTP-Referer': 'http://localhost',
+            'X-Title': 'OR Key Tester',
+          },
+          body: JSON.stringify({
+            model,
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 256,
+          })
+        });
+
+        const latency = Math.round(performance.now() - t0);
+        const data = await res.json();
+
+        if (!res.ok) {
+          const msg = data?.error?.message || data?.error || `HTTP ${res.status}`;
+          showResult({ ok: false, model, latency, error: msg });
+          addHistory({ ok: false, model, latency, error: msg });
+        } else {
+          const content = data.choices?.[0]?.message?.content || '(no content)';
+          const usage = data.usage || {};
+          showResult({ ok: true, model, latency, content, usage });
+          addHistory({ ok: true, model, latency });
+        }
+      } catch (err) {
+        const latency = Math.round(performance.now() - t0);
+        showResult({ ok: false, model, latency, error: err.message });
+        addHistory({ ok: false, model, latency, error: err.message });
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function showResult({ ok, model, latency, content, usage, error }) {
+      const card = document.getElementById('resultCard');
+      card.className = 'result-card visible';
+
+      const badge = document.getElementById('statusBadge');
+      badge.className = 'status-badge ' + (ok ? 'ok' : 'error');
+      badge.innerHTML = ok
+        ? `<span class="status-icon">✓</span> VALID KEY`
+        : `<span class="status-icon">✗</span> FAILED`;
+
+      const meta = document.getElementById('resultMeta');
+      meta.innerHTML = `<span><b>${latency}ms</b> latency</span><span><b>${model.split('/').pop()}</b></span>`;
+
+      const rc = document.getElementById('resultContent');
+      if (ok) {
+        rc.textContent = content;
+        rc.className = 'result-content ok-bg';
+      } else {
+        rc.textContent = error;
+        rc.className = 'result-content err-bg';
+      }
+
+      const statsSection = document.getElementById('statsSection');
+      if (ok && usage) {
+        statsSection.style.display = 'block';
+        document.getElementById('statsRow').innerHTML = `
+          <div class="stat-box"><span class="stat-val">${usage.prompt_tokens ?? '—'}</span><div class="stat-key">Prompt</div></div>
+          <div class="stat-box"><span class="stat-val">${usage.completion_tokens ?? '—'}</span><div class="stat-key">Completion</div></div>
+          <div class="stat-box"><span class="stat-val">${usage.total_tokens ?? '—'}</span><div class="stat-key">Total</div></div>
+        `;
+      } else {
+        statsSection.style.display = 'none';
+      }
+
+      // Re-trigger animation
+      card.style.animation = 'none';
+      card.offsetHeight;
+      card.style.animation = '';
+    }
+
+    function showError(msg) {
+      const card = document.getElementById('resultCard');
+      card.className = 'result-card visible';
+      document.getElementById('statusBadge').className = 'status-badge error';
+      document.getElementById('statusBadge').innerHTML = `<span class="status-icon">!</span> ERROR`;
+      document.getElementById('resultMeta').innerHTML = '';
+      const rc = document.getElementById('resultContent');
+      rc.textContent = msg;
+      rc.className = 'result-content err-bg';
+      document.getElementById('statsSection').style.display = 'none';
+    }
+
+    function setLoading(state) {
+      const btn = document.getElementById('runBtn');
+      const spinner = document.getElementById('spinner');
+      btn.disabled = state;
+      if (state) {
+        btn.classList.add('loading');
+        spinner.style.display = 'inline-block';
+      } else {
+        btn.classList.remove('loading');
+        spinner.style.display = 'none';
+      }
+    }
+
+    function addHistory(entry) {
+      entry.ts = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      history.unshift(entry);
+      if (history.length > 20) history = history.slice(0, 20);
+      localStorage.setItem('or_history', JSON.stringify(history));
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const wrap = document.getElementById('historyWrap');
+      const list = document.getElementById('historyList');
+      if (!history.length) { wrap.style.display = 'none'; return; }
+      wrap.style.display = 'block';
+      list.innerHTML = history.map(h => `
+        <div class="history-item">
+          <div class="history-dot ${h.ok ? 'ok' : 'err'}"></div>
+          <span class="model-tag">${h.model.split('/').pop()}</span>
+          <span>${h.ok ? '✓ valid' : '✗ ' + (h.error || 'failed').slice(0, 38)}</span>
+          <span class="time-tag">${h.latency}ms · ${h.ts}</span>
+        </div>
+      `).join('');
+    }
+
+    function clearHistory() {
+      history = [];
+      localStorage.removeItem('or_history');
+      renderHistory();
+    }
+
+    // init
+    buildModelGrid();
+    renderHistory();
+  </script>
+</body>
+</html>
