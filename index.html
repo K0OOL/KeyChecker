@@ -685,15 +685,11 @@
       const t0 = performance.now();
 
       try {
-        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        const res = await fetch('/proxy', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${key}`,
-            'HTTP-Referer': 'http://localhost',
-            'X-Title': 'OR Key Tester',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            apiKey: key,
             model,
             messages: [{ role: 'user', content: prompt }],
             max_tokens: 256,
@@ -701,7 +697,12 @@
         });
 
         const latency = Math.round(performance.now() - t0);
-        const data = await res.json();
+
+        // Safe parse — guard against the server accidentally returning HTML
+        const raw = await res.text();
+        let data;
+        try { data = JSON.parse(raw); }
+        catch { data = { error: { message: `Server returned non-JSON (HTTP ${res.status}): ${raw.slice(0, 120)}` } }; }
 
         if (!res.ok) {
           const msg = data?.error?.message || data?.error || `HTTP ${res.status}`;
