@@ -11,6 +11,7 @@ const PORT = process.argv[2] || 3737;
 const DIR = __dirname;
 const MAX_BODY_SIZE = 256 * 1024; // 256KB
 const UPSTREAM_TIMEOUT_MS = 15000;
+const SAFE_STATIC_PATH = /^[A-Za-z0-9._/-]+$/;
 
 const MIME = {
   '.html': 'text/html',
@@ -70,7 +71,7 @@ const server = http.createServer((req, res) => {
       if (bodySize > MAX_BODY_SIZE) {
         bodyTooLarge = true;
         json(413, { error: { message: 'Request body too large.' } });
-        req.destroy();
+        req.pause();
         return;
       }
       body += chunk;
@@ -156,10 +157,35 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  const relativePath = decodedPath === '/' ? 'index.html' : decodedPath.replace(/^\/+/, '');
+  if (/(^|\/)\.\.(\/|$)/.test(decodedPath)) {
+    res.writeHead(403);
+    res.end('Forbidden');
+    return;
+  }
+
+  const normalizedPath = path.posix.normalize(decodedPath);
+  if (normalizedPath.includes('\\') || normalizedPath.includes('\0')) {
+    res.writeHead(403);
+    res.end('Forbidden');
+    return;
+  }
+
+  const relativePath = normalizedPath === '/' ? 'index.html' : normalizedPath.replace(/^\/+/, '');
+  if (
+    !SAFE_STATIC_PATH.test(relativePath)
+    || relativePath === '..'
+    || relativePath.startsWith('../')
+    || relativePath.includes('/../')
+  ) {
+    res.writeHead(403);
+    res.end('Forbidden');
+    return;
+  }
+
   const filePath = path.resolve(DIR, path.normalize(relativePath));
   const rootPath = path.resolve(DIR);
-  if (filePath !== rootPath && !filePath.startsWith(rootPath + path.sep)) {
+  const relativeToRoot = path.relative(rootPath, filePath);
+  if (relativeToRoot.startsWith('..') || path.isAbsolute(relativeToRoot)) {
     res.writeHead(403);
     res.end('Forbidden');
     return;
